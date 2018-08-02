@@ -38,33 +38,34 @@ echo 'fileinfo安装完成!'
 sleep 1
 echo "正在安装依赖环境......";
 sleep 2
+
 cd /www/wwwroot/$web
 rm -rf index.html 404.html
 #安装git,unzip工具
 yum install git unzip -y 
-wget --no-check https://github.com/4kercc/bt-ssrpanel/raw/master/V3.4.zip
-unzip V3.4.zip
-mv SSRPanel-3.4 ssrpanel
-cd ssrpanel/
+wget --no-check https://github.com/ssrpanel/SSRPanel/archive/master.zip
+unzip master.zip
+mv SSRPanel-master SSRPanel
+cd SSRPanel/
+cp .env.example .env
+#删除禁用函数
 sed -i 's/proc_open,//g' /www/server/php/71/etc/php.ini
 sed -i 's/proc_get_status,//g' /www/server/php/71/etc/php.ini     
-sed -i "s/'database' => 'ssrpanel'/'database' => '$mysqlu'/g" /www/wwwroot/$web/ssrpanel/config/database.php
-sed -i "s/'username' => 'root'/'username' => '$mysqlu'/g" /www/wwwroot/$web/ssrpanel/config/database.php
-sed -i "s/'password' => 'root'/'password' => '$mysqlp'/g" /www/wwwroot/$web/ssrpanel/config/database.php
-cd /www/wwwroot/$web/ssrpanel/sql
+#修改数据库信息
+sed -i "s/DB_DATABASE=ssrpanel/DB_DATABASE=$mysqlu/g" /www/wwwroot/$web/SSRPanel/.env
+sed -i "s/DB_USERNAME=root/DB_USERNAME=$mysqlu/g" /www/wwwroot/$web/SSRPanel/.env
+sed -i "s/DB_PASSWORD=root/DB_PASSWORD=$mysqlp/g" /www/wwwroot/$web/SSRPanel/.env
+cd /www/wwwroot/$web/SSRPanel/sql
 mysql -u$mysqlu -p$mysqlp $mysqlu < db.sql >/dev/null 2>&1
-cd ..
+cd /www/wwwroot/$web/SSRPanel
+php composer.phar update
 php composer.phar install
-clear
-echo "------------------------------"
-echo "即将出现的界面请输入yes继续"
-echo "------------------------------"
 php artisan key:generate
 chown -R www:www storage/
 chmod -R 777 storage/
 sleep 3
 #修改伪静态以及默认路径
-sed -i "s/www\/wwwroot\/$web/www\/wwwroot\/$web\/ssrpanel\/public/g" /www/server/panel/vhost/nginx/$web.conf
+sed -i "s/www\/wwwroot\/$web/www\/wwwroot\/$web\/SSRPanel\/public/g" /www/server/panel/vhost/nginx/$web.conf
 echo '
 location / {
 try_files $uri $uri/ /index.php$is_args$args;
